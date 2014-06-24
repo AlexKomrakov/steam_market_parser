@@ -1,22 +1,64 @@
 <?php
 
+use Pheanstalk\Pheanstalk;
+
 class TestTask extends \Phalcon\CLI\Task {
 
+    public $count = 5;
+
     public function mainAction() {
-        echo 'TestTask::mainAction' . PHP_EOL;
+
+        $queue = new Pheanstalk('localhost');
+        $queue->watch('default');
+
+        while($job = $queue->reserve()) {
+            $body = $job->getData();
+            $body = json_decode($body, true);
+
+            $url = $body['link'];
+
+            $cookie = 'sessionid=OTE1NDMyNTU%3D; Steam_Language=russian; recentlyVisitedAppHubs=221410; steamLogin=76561198032255024%7C%7C206D72EE094F069EDC4213C1C73B9D97FA411D79; webTradeEligibility=%7B%22allowed%22%3A0%2C%22reason%22%3A2048%2C%22allowed_at_time%22%3A1404143342%2C%22steamguard_required_days%22%3A15%2C%22sales_this_year%22%3A452%2C%22max_sales_per_year%22%3A-1%2C%22forms_requested%22%3A0%2C%22new_device_cooldown_days%22%3A7%7D; steamCC_95_79_105_224=RU; timezoneOffset=14400,0; __utma=268881843.2095460869.1403287496.1403538691.1403542708.4; __utmb=268881843.0.10.1403542708; __utmc=268881843; __utmz=268881843.1403538691.3.3.utmcsr=yandex|utmccn=(organic)|utmcmd=organic';
+            $pattern = '/var line1=(.*);/';
+            $curlInstance = curl_init();
+            curl_setopt($curlInstance, CURLOPT_URL, $url);
+            curl_setopt($curlInstance, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curlInstance, CURLOPT_COOKIE, $cookie);
+            $response = curl_exec($curlInstance);
+            preg_match($pattern, $response, $matches);
+            $result = json_decode($matches[1]);
+            $lastId = count($result);
+            $count = $this->count;
+            if ($lastId >= $count) {
+                $aggregate = [];
+                for ($i = 1; $i<=$count; $i++) {
+                    $time = strtotime($result[$lastId-$i][0]); //Convert to Unix time
+                    $price = round($result[$lastId-$i][1], 2); //Round to *.**
+                    $selled = (int) preg_replace('/\D/', '', $result[$lastId-$i][2]); //Parse count of selled items
+                    $aggregate[] = [
+                        'time' => $time,
+                        'price' => $price,
+                        'selled' => $selled
+                    ];
+                }
+            } else {
+                $time = strtotime($result[$lastId-1][0]); //Convert to Unix time
+                $price = round($result[$lastId-1][1], 2); //Round to *.**
+                $selled = (int) preg_replace('/\D/', '', $result[$lastId-1][2]); //Parse count of selled items
+                $aggregate[] = [
+                    'time' => $time,
+                    'price' => $price,
+                    'selled' => $selled
+                ];
+            }
+            $summary = [
+                'link' => $url,
+                'summary' => $aggregate
+            ];
+            print_r($summary);
+
+            $queue->delete($job);
+        }
+
     }
 
-    public function calculateAction($a = 0, $b = 0) {
-        $this->writeln('TestTask::calculateAction');
-        sleep(1);
-        $this->writeln('calculating...');
-        sleep(2);
-        $this->writeln("$a + $b = " . ($a + $b));
-    }
-
-    protected function writeln($text) {
-        $f = fopen('php://stdout', 'w');
-        fputs($f, $text . PHP_EOL);
-        fclose($f);
-    }
 }

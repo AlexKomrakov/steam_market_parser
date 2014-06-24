@@ -10,6 +10,8 @@ defined('APPLICATION_PATH') || define('APPLICATION_PATH', dirname(__DIR__) ); //
 
 use Phalcon\DI\FactoryDefault\CLI as CliDI, Phalcon\CLI\Console as ConsoleApp;
 
+require __DIR__ . '/../vendor/autoload.php';
+
 $di = new CliDI();
 
 // Default router

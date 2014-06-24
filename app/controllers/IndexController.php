@@ -21,29 +21,30 @@ class IndexController extends ControllerBase
         $lastId = count($result);
         $count = $this->count;
         if ($lastId >= $count) {
-            $time = strtotime($result[$lastId-1][0]); //Convert to Unix time
-            $price = 0;
-            $selled = 0;
+            $aggregate = [];
             for ($i = 1; $i<=$count; $i++) {
-                $price += $result[$lastId-$i][1]; //Round to *.**
-                $selled += (int) preg_replace('/\D/', '', $result[$lastId-1][2]); //Parse count of selled items
+                $time = strtotime($result[$lastId-$i][0]); //Convert to Unix time
+                $price = round($result[$lastId-$i][1], 2); //Round to *.**
+                $selled = (int) preg_replace('/\D/', '', $result[$lastId-$i][2]); //Parse count of selled items
+                $aggregate[] = [
+                    'time' => $time,
+                    'price' => $price,
+                    'selled' => $selled
+                ];
             }
-            $price = round($price / $count, 2);
-            $selled = round ($selled / $count);
         } else {
-            $count = 1;
             $time = strtotime($result[$lastId-1][0]); //Convert to Unix time
             $price = round($result[$lastId-1][1], 2); //Round to *.**
             $selled = (int) preg_replace('/\D/', '', $result[$lastId-1][2]); //Parse count of selled items
-        }
-        $summary = [
-            'link' => $url,
-            'summary' => [
-                'count' => $count,
+            $aggregate[] = [
                 'time' => $time,
                 'price' => $price,
                 'selled' => $selled
-            ]
+            ];
+        }
+        $summary = [
+            'link' => $url,
+            'summary' => $aggregate
         ];
         print_r($summary);
     }
