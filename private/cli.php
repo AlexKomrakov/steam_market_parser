@@ -26,8 +26,9 @@ $di->set('loader', [
         ['method' => 'registerDirs', 'arguments' => [
             ['type' => 'parameter', 'value' => [
                 //'controllers' => APPLICATION_PATH . '/controllers/',
-                //'models'      => APPLICATION_PATH . '/models/',
                 'tasks'       => APPLICATION_PATH . '/app/common/tasks/',
+                'components'  => APPLICATION_PATH . '/app/common/components/',
+                'models'      => APPLICATION_PATH . '/app/models/'
             ]]
         ]],
         ['method' => 'register'],
@@ -48,6 +49,15 @@ $di->set('dispatcher', array(
         ),
     )
 );
+
+$di->setShared('mongo', function() {
+    $mongo = new MongoClient();
+    return $mongo->selectDb("steam");
+});
+
+$di->set('collectionManager', function(){
+    return new Phalcon\Mvc\Collection\Manager();
+});
 
 // Console application
 $console = new ConsoleApp($di);

@@ -56,3 +56,12 @@ $di->set('session', function() {
     $session->start();
     return $session;
 });
+
+$di->setShared('mongo', function() {
+    $mongo = new MongoClient();
+    return $mongo->selectDb("steam");
+});
+
+$di->set('collectionManager', function(){
+    return new Phalcon\Mvc\Collection\Manager();
+});
